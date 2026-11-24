@@ -27,4 +27,29 @@ module.exports = {
   // Already approved for real (2026-11-24) — permanent, safe to depend on
   // regardless of test order or whether approveTarget has run yet.
   approvedMerchantForPricingCheck: 'Sultana Food Corner',
+
+  /**
+   * Charge distribution (TP_Charge_Distribution_Scenarios.xlsx). Confirmed
+   * live (2026-11-24): the real model is a markup/spread — Payment
+   * instrument rate (PI) + Transpay's own "merchant wise rate" (TP) +
+   * an optional "Other Charge" (V, see Vendors page) — with a Super/
+   * Sub-merchant floor rule (SM) — not the spreadsheet's proportional
+   * weighted split of one total charge (see README "Charge distribution").
+   */
+  chargeDistribution: {
+    // Sultana Food Corner (merchant id 99) — approved, permanent, has no
+    // merchant wise rate or enabled instruments configured, so it's a
+    // stable target for read-only and validation-only assertions that
+    // must never mutate real pricing. Attached as a sub-merchant of Aalo
+    // (2026-11-24, see merchantLifecycle.spec.js) — still has nothing set
+    // in sections 2/3, only its Hierarchy (section 4) changed.
+    pricingMerchantId: 99,
+    pricingMerchantName: 'Sultana Food Corner',
+    // Confirmed real server-side validation messages (API returns 400,
+    // and the UI surfaces these exact strings inline under the field).
+    negativePercentage: -5,
+    negativePercentageError: 'The percentage cannot be negative',
+    overHundredPercentage: 150,
+    overHundredPercentageError: 'The percentage cannot exceed 100',
+  },
 };

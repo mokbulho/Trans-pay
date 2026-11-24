@@ -27,6 +27,23 @@ class ApplicationDetailsDialog extends BasePage {
   async close() {
     await this.closeButton.click();
   }
+
+  /**
+   * Scrolls the dialog's own inner content area (not the page) from top to
+   * bottom and back, visiting every submitted section and document.
+   * Confirmed live: the dialog has exactly one scrollable region
+   * (`.overflow-y-auto`), separate from the fixed heading/status chips.
+   */
+  async scrollThroughTopToBottomAndBack() {
+    const scrollRegion = this.dialog.locator('.overflow-y-auto');
+    await scrollRegion.hover();
+    for (let i = 0; i < 8; i++) {
+      await this.page.mouse.wheel(0, 400);
+    }
+    for (let i = 0; i < 8; i++) {
+      await this.page.mouse.wheel(0, -400);
+    }
+  }
 }
 
 module.exports = { ApplicationDetailsDialog };

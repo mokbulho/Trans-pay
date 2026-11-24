@@ -20,6 +20,48 @@ class ApplicationsListPage extends AdminBasePage {
     this.pendingReviewTab = page.getByRole('button', { name: 'Pending review' });
     this.approvedTab = page.getByRole('button', { name: 'Approved' });
     this.searchInput = page.getByPlaceholder('Search merchant, code or district');
+    this.superMerchantPricingCheckButton = page.getByRole('button', { name: 'Super merchant pricing check' });
+  }
+
+  /**
+   * The Approved tab's row menu has up to 8 items (confirmed live,
+   * 2026-11-24): View application, Attach/Change super merchant,
+   * Vendors & Other Charge, Pricing & rates, Edit on the core platform,
+   * Rotate API secret, Rotate webhook secret, Disable on the core
+   * platform. Each accessible name concatenates its title and
+   * description, so these match by a leading-text regex.
+   */
+  viewApplicationMenuItem() {
+    return this.page.getByRole('menuitem', { name: /^View application/ });
+  }
+
+  /** Reads "Attach to a super merchant" (standalone) or "Change super merchant" (already attached). */
+  attachOrChangeSuperMerchantMenuItem() {
+    return this.page.getByRole('menuitem', { name: /^(Attach to a super merchant|Change super merchant)/ });
+  }
+
+  vendorsAndOtherChargeMenuItem() {
+    return this.page.getByRole('menuitem', { name: /^Vendors & Other Charge/ });
+  }
+
+  pricingAndRatesMenuItem() {
+    return this.page.getByRole('menuitem', { name: /^Pricing & rates/ });
+  }
+
+  editOnCorePlatformMenuItem() {
+    return this.page.getByRole('menuitem', { name: /^Edit on the core platform/ });
+  }
+
+  rotateApiSecretMenuItem() {
+    return this.page.getByRole('menuitem', { name: /^Rotate API secret/ });
+  }
+
+  rotateWebhookSecretMenuItem() {
+    return this.page.getByRole('menuitem', { name: /^Rotate webhook secret/ });
+  }
+
+  disableOnCorePlatformMenuItem() {
+    return this.page.getByRole('menuitem', { name: /^Disable on the core platform/ });
   }
 
   async open() {
@@ -70,6 +112,17 @@ class ApplicationsListPage extends AdminBasePage {
   /** Approved tab only. @param {string} merchantName */
   getPricingLink(merchantName) {
     return this.getRow(merchantName).locator('a[href*="/pricing"]');
+  }
+
+  /**
+   * Reads the HIERARCHY column text ("Super merchant" | "Sub-merchant
+   * ↳ under {name}") out of a merchant's row.
+   * @param {string} merchantName
+   * @returns {Promise<string>}
+   */
+  async getHierarchyStatus(merchantName) {
+    const text = await this.getRow(merchantName).innerText();
+    return text.includes('Sub-merchant') ? text.match(/under ([^\n]+)/)?.[0] ?? 'Sub-merchant' : 'Super merchant';
   }
 }
 

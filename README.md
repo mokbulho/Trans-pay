@@ -198,13 +198,100 @@ merchants from the bulk-data run that haven't been decided yet; each test
 also checks the merchant's current status first and skips itself if it's
 already been approved/rejected, instead of failing on a missing Pending row.
 
-The Pricing page object (`MerchantPricingPage.js`) only confirms the
-navigation into `/admin/merchants/:id/pricing` lands correctly — the
-payment-instrument/rate/hierarchy editing inside it is a large, separate
-feature area intentionally left out of scope here.
+The Pricing page object (`MerchantPricingPage.js`) confirms the navigation
+into `/admin/merchants/:id/pricing` lands correctly; its instrument-enable,
+merchant-wise-rate and hierarchy sections are covered in depth by the
+Charge distribution spec below instead of here.
 
 ```powershell
 npm run test:admin
+```
+
+## Charge distribution
+
+`tests/admin/chargeDistribution.spec.js` tests the business rules from a
+bank-provided spec, `TP_Charge_Distribution_Scenarios.xlsx` (Parameters /
+Scenarios / Negative_Scenarios / Rules_Legend sheets), against what the
+live platform actually implements. The spreadsheet models a single charge
+split **proportionally by weight** across up to 5 parties — PI (Payment
+Instrument), TP (Transpay gateway, always paid), SM (Super Merchant), M
+(Merchant), V (Vendor) — e.g. "PI+TP active → PI gets 6%, TP gets 4%",
+32 positive scenarios (16 party combinations × Inbound/Outbound) plus 10
+negative/invalid cases.
+
+**Confirmed live (2026-11-24): the real model is a markup/spread, not a
+proportional split of one total charge.** There is no endpoint that takes
+"which parties are active" and returns a 5-way percentage split summing to
+100%. Instead, per merchant (`/admin/merchants/:id/pricing`):
+
+| Spreadsheet entity | What's actually live |
+|---|---|
+| **PI** | The instrument's own rate — global in the read-only Rate Catalogue (`/admin/charges`), optionally overridden per merchant in "Payment instruments" |
+| **TP** | "Merchant wise rate" — Transpay's own cut, added on top of the instrument charge (always configurable, matching Condition 1) |
+| **V** | The same "Merchant wise rate" form's "Other Charge" (an amount or a percentage) — confirmed on the Vendors page ("Vendors... can take a merchant's Other Charge") |
+| **SM** | A Super merchant / Sub-merchant **hierarchy**, not a revenue share — a sub-merchant's combined rate (instrument + merchant wise rate) must never be less than its super merchant's, enforced server-side and by the "Super merchant pricing check" tool on the Applications list |
+| **M** | Not a separate rate — the merchant simply receives `amount − totalCharge` |
+
+This was found by reading the real endpoints behind the Pricing page
+(`core-merchant/rate-config`, `core-merchant/platform-charge`) and
+testing the "Merchant wise rate" form directly — an empty draft with no
+side effects. Two negative-input validations were confirmed for real
+through the actual form, not guessed: a negative percentage is rejected
+with *"The percentage cannot be negative"*, and one over 100 with *"The
+percentage cannot exceed 100"* (both server-side, HTTP 400 — the client's
+own live preview doesn't warn first, so these are UI-driven assertions on
+purpose, not raw API calls). The Condition-3 "parts sum to the whole"
+check is verified arithmetically against a real, already-configured
+merchant (Michael Madhusudan College, a sub-merchant "Under Aalo"):
+Bill ৳1,000 + merchant wise rate ৳20 + Other Charge ৳10 + instrument
+charge ৳15.35 = Payer pays ৳1,045.35.
+
+## Merchant lifecycle (Approved-list row actions)
+
+`tests/admin/merchantLifecycle.spec.js` covers the rest of an Approved
+row's "⋮" menu, confirmed live (2026-11-24) to have up to 8 items: View
+application, Attach/Change super merchant, Vendors & Other Charge,
+Pricing & rates (the Charge distribution Pricing page above), Edit on
+the core platform, Rotate API secret, Rotate webhook secret, Disable on
+the core platform.
+
+**"Make payment" was asked for but does not exist in this build.**
+Checked in every plausible place — the row menu, the merchant's Pricing
+page, the Transactions page — both before and after enabling an
+instrument and setting a rate on a test merchant. If this is meant to
+exist, it isn't live yet; flag it back to whoever specified it.
+
+Real actions performed for real against Sultana Food Corner this
+session, not just opened and cancelled:
+- **Attached it as a sub-merchant of Aalo** (explicit request) via
+  "Attach to a super merchant" → search → select Aalo → Review attach →
+  Confirm. Aalo now earns commission on its payments and takes its
+  Other Charge, confirmed on the Vendors & Other Charge dialog
+  ("waits until it is detached").
+- **Rotated its API secret and webhook secret** through the real
+  "Copy these secrets now" dialog (shared with the approval flow's
+  secrets dialog — see `ApiSecretsDialog.js`). Rotation is designed to
+  be repeatable, so the spec rotates them again on every run.
+- **Round-tripped its Address** on "Edit on the core platform" (edited,
+  saved, reverted, saved) — confirms both the save flow and its History
+  tab's before → after audit trail ("Secrets are never recorded" there).
+
+**Deliberately never confirmed for real: "Disable on the core
+platform."** Its own row-menu description says *"Stop the merchant
+taking payments. Nothing is deleted and it can be re-enabled,"* but the
+actual confirmation dialog is titled **"Reject this merchant on the core
+platform?"** and warns the merchant *"will not be able to authenticate
+until re-approved"* — materially stronger than the menu copy, and
+Sultana Food Corner's Active status is relied on by the rest of this
+suite. The test opens the dialog, asserts its real title and copy, and
+only ever clicks Cancel.
+
+```powershell
+npx playwright test tests/admin/merchantLifecycle.spec.js
+```
+
+```powershell
+npx playwright test tests/admin/chargeDistribution.spec.js
 ```
 
 ## See also

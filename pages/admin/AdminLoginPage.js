@@ -59,7 +59,12 @@ class AdminLoginPage extends BasePage {
       .waitFor({ state: 'visible', timeout: 10_000 })
       .catch(() => {});
 
-    if (!(await this.signInButton.isEnabled())) {
+    // isEnabled() can itself throw (not just return false) if Turnstile's
+    // DOM churn leaves the button transiently unattached/unstable —
+    // observed live under parallel workers. Treat that the same as
+    // "still disabled" rather than letting it fail the test.
+    const isEnabled = await this.signInButton.isEnabled({ timeout: 5_000 }).catch(() => false);
+    if (!isEnabled) {
       return { blockedByCaptcha: true };
     }
 

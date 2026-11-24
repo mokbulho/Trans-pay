@@ -11,6 +11,11 @@ const { BasePage } = require('../base/BasePage');
  * Deliberately exposes no getters for the actual secret values — they're
  * randomly generated per approval and this framework has no business
  * asserting on or persisting real generated credentials.
+ *
+ * Reused by the Admin Console's "Rotate API secret" / "Rotate webhook
+ * secret" row actions (confirmed live, 2026-11-24): the approval flow
+ * shows both secrets together ("Copy API secret" / "Copy Webhook secret"
+ * buttons), a single rotation shows only the one field it issued.
  */
 class ApiSecretsDialog extends BasePage {
   /** @param {import('@playwright/test').Page} page */
@@ -20,6 +25,8 @@ class ApiSecretsDialog extends BasePage {
     this.dialog = page.getByRole('dialog', { name: 'Copy these secrets now' });
     this.copyApiSecretButton = this.dialog.getByRole('button', { name: 'Copy API secret' });
     this.copyWebhookSecretButton = this.dialog.getByRole('button', { name: 'Copy Webhook secret' });
+    this.apiSecretFieldLabel = this.dialog.getByText('API secret', { exact: true });
+    this.webhookSecretFieldLabel = this.dialog.getByText('Webhook secret', { exact: true });
     this.storedSafelyCheckbox = this.dialog.getByRole('checkbox');
     this.doneButton = this.dialog.getByRole('button', { name: 'Done' });
   }
