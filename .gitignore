@@ -1,0 +1,17 @@
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+/.playwright-cli/
+
+# Environment
+.env
+
+# Exploration scratch output (codegen snapshots/screenshots, not part of the framework)
+/step*.png
+/step*.yml
+/mn.md
