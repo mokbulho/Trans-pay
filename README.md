@@ -1,8 +1,11 @@
 # TransPay Automation Framework
 
-Scalable Playwright + Page Object Model framework for the TransPay
-**Merchant Onboarding** wizard (`tests/merchant`) — the "Become a Merchant"
-flow at `https://merchant-dev.softbd.xyz/onboarding`.
+Scalable Playwright + Page Object Model framework for TransPay:
+
+- **Merchant Onboarding** wizard (`tests/merchant`) — the "Become a
+  Merchant" flow at `https://merchant-dev.softbd.xyz/onboarding`.
+- **Admin Console** (`tests/admin`) — the Merchant Management → Applications
+  approval workflow at `https://merchant-dev.softbd.xyz/admin`.
 
 ## Structure
 
@@ -11,11 +14,13 @@ config/            Centralized environment/config loader (reads .env once)
 pages/
   base/             BasePage — shared navigation + search-dropdown helpers
   merchant/         MerchantBasePage + one page object per wizard step
+  admin/            Admin login + Applications list/dialogs/pricing page objects
 fixtures/           Custom Playwright fixtures (auto-instantiate page objects)
 data/               Static/seed test data (+ placeholder upload assets)
 utils/              Framework-agnostic helpers (unique email/name generators)
 tests/
   merchant/
+  admin/
 playwright.config.js Production-level config: retries, timeouts, trace/video/
                       screenshot capture, multi-browser projects
 ```
@@ -33,12 +38,14 @@ Configuration lives in `.env` (see `.env.example`). Key variables:
 |---|---|
 | `BASE_URL` | Merchant onboarding site |
 | `MERCHANT_MOBILE_NUMBER` | QA mobile number for the onboarding flow — **a one-shot resource, see below** |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Shared Admin Console test account (see "Admin Console" below) |
 
 ## Running tests
 
 ```powershell
 npm test                 # everything, all browsers
 npm run test:merchant    # Merchant Onboarding suite
+npm run test:admin       # Admin Console suite
 npm run test:smoke       # tests tagged @smoke
 npm run test:headed      # see the browser
 npm run test:ui          # Playwright's interactive UI mode
@@ -160,6 +167,44 @@ guard once a number is consumed).
 ```powershell
 npm run test:bulk                                   # bundled example data
 $env:BULK_DATA_FILE="path/to/your-file.csv"; npx playwright test tests/merchant/merchantOnboardingbulkdata.spec.js
+```
+
+## Admin Console (Merchant Management → Applications)
+
+`tests/admin/adminMerchantApproval.spec.js` covers the admin approval
+workflow: log in → Applications list (Pending/Approved/All tabs) → view a
+pending application's details → **Approve** (Domain, Allowed IPs,
+Settlement cycle, then a one-time API/Webhook secrets dialog) or
+**Reject** (reason required) → Approved tab → per-merchant Pricing page.
+Page objects live in `pages/admin/`, fixtures in `fixtures/admin.fixtures.js`,
+targets in `data/admin/adminTestData.js`.
+
+**The shared `/login` screen is also behind Cloudflare Turnstile** — same
+mechanism as the merchant onboarding wizard's mobile verification step
+(see above), confirmed with a direct 40-second headless Playwright probe:
+the Turnstile token never resolved and the "Sign in" button never enabled.
+A real, non-automated Chrome session passes it invisibly in ~3s instead.
+`AdminLoginPage.login()` waits up to 10s for "Sign in" to enable and
+returns `{ blockedByCaptcha }` instead of clicking a disabled button; every
+test in this suite skips itself on that flag rather than failing, so it
+reports `5 skipped` (never fails) under Playwright/CI.
+
+What was verified for real this session through a non-automated browser:
+Approved "Sultana Food Corner" (domain + IP `180.148.212.90` + 7-day
+settlement cycle) — now Active, merchant code `sultana_food_corner`.
+Rejected "Karim Fashion House" with a reason — now shows "Rejected".
+`approveTarget` / `rejectTarget` in `adminTestData.js` point at Pending
+merchants from the bulk-data run that haven't been decided yet; each test
+also checks the merchant's current status first and skips itself if it's
+already been approved/rejected, instead of failing on a missing Pending row.
+
+The Pricing page object (`MerchantPricingPage.js`) only confirms the
+navigation into `/admin/merchants/:id/pricing` lands correctly — the
+payment-instrument/rate/hierarchy editing inside it is a large, separate
+feature area intentionally left out of scope here.
+
+```powershell
+npm run test:admin
 ```
 
 ## See also
