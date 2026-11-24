@@ -2,7 +2,7 @@
   "name": "transpay",
   "version": "1.0.0",
   "private": true,
-  "description": "Scalable Playwright + POM automation framework for the TransPay Merchant Onboarding and Admin Console suites",
+  "description": "Scalable Playwright + POM automation framework for the TransPay Merchant Onboarding, Admin Console and Make Payment suites",
   "scripts": {
     "test": "playwright test",
     "test:headed": "playwright test --headed",
@@ -10,6 +10,7 @@
     "test:ui": "playwright test --ui",
     "test:merchant": "playwright test tests/merchant",
     "test:admin": "playwright test tests/admin",
+    "test:payment": "playwright test tests/payment",
     "test:smoke": "playwright test --grep @smoke",
     "test:bulk": "playwright test tests/merchant/merchantOnboardingbulkdata.spec.js",
     "test:chromium": "playwright test --project=chromium",

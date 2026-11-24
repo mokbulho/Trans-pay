@@ -246,6 +246,10 @@ merchant (Michael Madhusudan College, a sub-merchant "Under Aalo"):
 Bill ৳1,000 + merchant wise rate ৳20 + Other Charge ৳10 + instrument
 charge ৳15.35 = Payer pays ৳1,045.35.
 
+```powershell
+npx playwright test tests/admin/chargeDistribution.spec.js
+```
+
 ## Merchant lifecycle (Approved-list row actions)
 
 `tests/admin/merchantLifecycle.spec.js` covers the rest of an Approved
@@ -255,11 +259,11 @@ Pricing & rates (the Charge distribution Pricing page above), Edit on
 the core platform, Rotate API secret, Rotate webhook secret, Disable on
 the core platform.
 
-**"Make payment" was asked for but does not exist in this build.**
-Checked in every plausible place — the row menu, the merchant's Pricing
-page, the Transactions page — both before and after enabling an
-instrument and setting a rate on a test merchant. If this is meant to
-exist, it isn't live yet; flag it back to whoever specified it.
+**"Make payment" doesn't exist in the Admin Console** — checked in every
+plausible place (the row menu, the merchant's Pricing page, the
+Transactions page) before and after enabling an instrument and setting a
+rate on a test merchant. It turned out to live on an entirely separate
+site instead — see "Make payment" below.
 
 Real actions performed for real against Sultana Food Corner this
 session, not just opened and cancelled:
@@ -290,8 +294,70 @@ only ever clicks Cancel.
 npx playwright test tests/admin/merchantLifecycle.spec.js
 ```
 
+## Make payment
+
+The real "Make payment" feature doesn't live in the Admin Console at
+all — it's a separate site, a test-merchant checkout tool at
+`https://testmerchant-transpay.softbd.xyz`, covered by
+`tests/payment/makePayment.spec.js`. **Unlike every other suite here,
+none of this site — nor the real Transpay gateway checkout, nor the TP
+Sandbox PG simulator — is behind Cloudflare Turnstile or needs a
+sign-in, so this suite runs for real under Playwright and actually
+passes, instead of skipping.**
+
+The flow, confirmed live (2026-11-24) end to end:
+
+1. **Merchant settings** (`/settings`) lists merchant "profiles" — each
+   one a saved set of core-platform credentials — with Activate / Test
+   login / Edit / Delete, and a "Paying as X (Y)" banner naming the
+   currently active one. **New payments always use the active profile.**
+2. **Pay** (`/`) is the plain customer-facing checkout form (Amount,
+   Full name, Mobile number, optional Email) that starts a real payment
+   against that active profile.
+3. It redirects to the **real Transpay gateway checkout**
+   (`transpay.dev.transpay.com.bd/transpaypg/checkout`) — Mobile
+   Banking / Cards / Net Banking tabs, one tile per instrument *enabled
+   for that merchant in Admin's Pricing page* (confirmed: an instrument
+   not enabled there doesn't appear here at all).
+4. Selecting `TP_SANDBOX_PG` redirects to the **TP Sandbox PG
+   simulator**, clearly labelled "SIMULATOR · NOT A BANK — nothing here
+   reaches a bank and no money moves." It gates its Pay-as-SUCCESS /
+   Fail / Cancel buttons behind a shared, per-environment "Simulated
+   authorisation" PIN (`tp_sandbox_pg.pin`, `environment.sandboxSettlePin`)
+   — its own copy says plainly this is *"not a bank credential, and not
+   proof anyone authenticated,"* just a guard against a bare link
+   triggering a settle. A wrong PIN doesn't fail the test outright — it
+   shows *"Wrong PIN — attempt N of 10"* and lets you correct it on the
+   same page (confirmed and covered by its own test).
+5. Settling as SUCCESS lands on a plain status page naming the
+   transaction id — which was confirmed to also show up immediately in
+   Admin's Transactions ledger once "Fetch new" is clicked there.
+
+**One-time setup done by hand, not by this suite** (see
+`data/testMerchant/testMerchantData.js`): Rahim General Store
+(`rahim_general_store`) — approved, a sub-merchant of Aalo — was given
+Payment instruments (ROCKET, TP_SANDBOX_PG) and a merchant wise rate in
+Admin (the business-rule precondition this feature was asked for:
+*"before make payment set the charges rate of the merchant and the
+payment gateway"*), then registered as a profile on the test-merchant
+tool using an API secret / webhook secret rotated for real from Admin's
+Rotate API secret / Rotate webhook secret dialogs, and left active.
+Those secrets are never re-entered by the automated suite — the saved
+profile persists on that tool between runs.
+
+**A real concurrency bug worth knowing about**: these tests share one
+mutable piece of *external* state — the test-merchant tool's single
+active-profile setting, which isn't scoped per Playwright browser
+context the way cookies are — so running them in parallel let two
+payments race against each other. The spec runs this describe block in
+serial mode (`test.describe.configure({ mode: 'serial' })`) to avoid it.
+Separately, the gateway itself rejects a customer name containing a
+hyphen (*"Customer name may contain only letters, digits, spaces and
+full stops"*) — found live when a first draft of the wrong-PIN test
+used "QA Wrong-PIN Retry Test" as the name.
+
 ```powershell
-npx playwright test tests/admin/chargeDistribution.spec.js
+npm run test:payment
 ```
 
 ## See also
