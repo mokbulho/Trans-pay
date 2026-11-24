@@ -10,6 +10,7 @@
     "test:ui": "playwright test --ui",
     "test:merchant": "playwright test tests/merchant",
     "test:smoke": "playwright test --grep @smoke",
+    "test:bulk": "playwright test tests/merchant/merchantOnboardingbulkdata.spec.js",
     "test:chromium": "playwright test --project=chromium",
     "report": "playwright show-report",
     "codegen": "playwright codegen"

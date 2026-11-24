@@ -133,6 +133,35 @@ first in headless CI, but it was wrong. `hasExistingApplication()` now
 checks for either status, and `isApproved()` / `isAwaitingReview()` exist
 for asserting the specific one.
 
+## Bulk data-driven onboarding
+
+`tests/merchant/merchantOnboardingbulkdata.spec.js` runs the same full
+8-step wizard once per row of a bulk data file instead of one hand-written
+merchant — `utils/bulkDataReader.js` loads `.json` or `.csv` natively (see
+`data/merchant/bulkMerchants.json` / `.csv` for the example data, same
+columns either way), or `.xlsx` if you `npm install xlsx` yourself (not a
+hard dependency here — see the npm audit note below on why). Point
+`BULK_DATA_FILE` at your own file to use it instead of the bundled example.
+Every row uses the same shared upload assets (`data/merchant/assets/*.png`)
+since a flat data file isn't a practical place to carry real images.
+
+The 3 example rows have been run for real against merchant-dev
+(2026-11-24): Rahim General Store (`01890001111`) → `TP-2026-000097`,
+Karim Fashion House (`01890002222`) → `TP-2026-000098`, Sultana Food
+Corner (`01890003333`) → `TP-2026-000099`. All three numbers are now
+consumed, same one-shot caveat as everywhere else in this README — point
+`bulkMerchants.json`/`.csv` at fresh, never-used numbers to exercise the
+wizard again. And like every other test here, each row still needs
+Turnstile to let "Send OTP" through, which Playwright itself never gets
+past (see above) — so right now every row cleanly `test.skip()`s instead
+of failing (either on `blockedByCaptcha`, or on the already-registered
+guard once a number is consumed).
+
+```powershell
+npm run test:bulk                                   # bundled example data
+$env:BULK_DATA_FILE="path/to/your-file.csv"; npx playwright test tests/merchant/merchantOnboardingbulkdata.spec.js
+```
+
 ## See also
 
 See the feedback list delivered alongside this framework for a full list of
