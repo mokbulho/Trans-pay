@@ -12,9 +12,12 @@
  * skip themselves rather than failing.
  */
 module.exports = {
+  // 'Rahim General Store' was the previous target — approved for real
+  // (2026-11-24) as a sub-merchant of Aalo, so it's no longer Pending.
+  // Pointed at 'TransPay QA Test Store 3' (#95), confirmed still Pending.
   approveTarget: {
-    merchantName: 'Rahim General Store',
-    domain: 'https://rahimgeneralstore.example.com',
+    merchantName: 'TransPay QA Test Store 3',
+    domain: 'https://transpayqateststore3.example.com',
     allowedIp: '180.148.212.90',
     settlementCycleDays: 7,
   },
