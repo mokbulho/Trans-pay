@@ -14,6 +14,7 @@ class AdminBasePage extends BasePage {
 
     this.merchantManagementNavGroup = page.getByRole('button', { name: 'Merchant Management' });
     this.applicationsNavLink = page.getByRole('link', { name: 'Applications' });
+    this.vendorsNavLink = page.getByRole('link', { name: 'Vendors', exact: true });
     this.signOutButton = page.getByRole('button', { name: 'Sign out' });
     this.notificationsButton = page.getByRole('button', { name: /notifications/i });
   }
@@ -24,6 +25,14 @@ class AdminBasePage extends BasePage {
       await this.merchantManagementNavGroup.click();
     }
     await this.applicationsNavLink.click();
+  }
+
+  /** Expands "Merchant Management" (if needed) and opens Vendors (`/admin/vendors`). */
+  async goToVendors() {
+    if (!(await this.vendorsNavLink.isVisible())) {
+      await this.merchantManagementNavGroup.click();
+    }
+    await this.vendorsNavLink.click();
   }
 
   async signOut() {

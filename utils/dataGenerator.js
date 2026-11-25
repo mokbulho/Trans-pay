@@ -26,4 +26,14 @@ function uniqueBusinessName(prefix = 'QA Test Store') {
   return `${prefix} ${uniqueSuffix()}`;
 }
 
-module.exports = { randomDigits, uniqueSuffix, uniqueEmail, uniqueBusinessName };
+/**
+ * A plausible, probably-never-used Bangladeshi mobile number
+ * (01[3-9]XXXXXXXX — 11 digits), for forms that reject a reused one
+ * (e.g. the Vendor wizard's "Unique to this vendor" Mobile Number).
+ */
+function uniqueMobileNumber() {
+  const operatorDigit = '3456789'[Math.floor(Math.random() * 7)];
+  return `01${operatorDigit}${randomDigits(8)}`;
+}
+
+module.exports = { randomDigits, uniqueSuffix, uniqueEmail, uniqueBusinessName, uniqueMobileNumber };

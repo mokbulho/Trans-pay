@@ -13,6 +13,12 @@ const { SuperMerchantHierarchyDialog } = require('../pages/admin/SuperMerchantHi
 const { VendorsOtherChargeDialog } = require('../pages/admin/VendorsOtherChargeDialog');
 const { EditCorePlatformDialog } = require('../pages/admin/EditCorePlatformDialog');
 const { DisableOnCorePlatformDialog } = require('../pages/admin/DisableOnCorePlatformDialog');
+const { VendorsListPage } = require('../pages/admin/VendorsListPage');
+const { VendorWizardPersonalInfoStep } = require('../pages/admin/VendorWizardPersonalInfoStep');
+const { VendorWizardBusinessInfoStep } = require('../pages/admin/VendorWizardBusinessInfoStep');
+const { VendorWizardPrimaryContactStep } = require('../pages/admin/VendorWizardPrimaryContactStep');
+const { VendorWizardBankDetailsStep } = require('../pages/admin/VendorWizardBankDetailsStep');
+const { VendorDetailPage } = require('../pages/admin/VendorDetailPage');
 
 /**
  * Custom fixtures for the Admin Console suite.
@@ -31,6 +37,12 @@ const { DisableOnCorePlatformDialog } = require('../pages/admin/DisableOnCorePla
  * @property {VendorsOtherChargeDialog} vendorsOtherChargeDialog
  * @property {EditCorePlatformDialog} editCorePlatformDialog
  * @property {DisableOnCorePlatformDialog} disableOnCorePlatformDialog
+ * @property {VendorsListPage} vendorsListPage
+ * @property {VendorWizardPersonalInfoStep} vendorPersonalInfoStep
+ * @property {VendorWizardBusinessInfoStep} vendorBusinessInfoStep
+ * @property {VendorWizardPrimaryContactStep} vendorPrimaryContactStep
+ * @property {VendorWizardBankDetailsStep} vendorBankDetailsStep
+ * @property {VendorDetailPage} vendorDetailPage
  */
 
 const test = base.test.extend({
@@ -86,6 +98,30 @@ const test = base.test.extend({
 
   disableOnCorePlatformDialog: async ({ page }, use) => {
     await use(new DisableOnCorePlatformDialog(page));
+  },
+
+  vendorsListPage: async ({ page }, use) => {
+    await use(new VendorsListPage(page));
+  },
+
+  vendorPersonalInfoStep: async ({ page }, use) => {
+    await use(new VendorWizardPersonalInfoStep(page));
+  },
+
+  vendorBusinessInfoStep: async ({ page }, use) => {
+    await use(new VendorWizardBusinessInfoStep(page));
+  },
+
+  vendorPrimaryContactStep: async ({ page }, use) => {
+    await use(new VendorWizardPrimaryContactStep(page));
+  },
+
+  vendorBankDetailsStep: async ({ page }, use) => {
+    await use(new VendorWizardBankDetailsStep(page));
+  },
+
+  vendorDetailPage: async ({ page }, use) => {
+    await use(new VendorDetailPage(page));
   },
 });
 

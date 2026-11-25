@@ -360,6 +360,62 @@ used "QA Wrong-PIN Retry Test" as the name.
 npm run test:payment
 ```
 
+## Vendor management
+
+Merchant Management → **Vendors** (`/admin/vendors`), covered by
+`tests/admin/vendorManagement.spec.js`. A vendor is the entity a
+merchant's "Other Charge" can be redirected to pay instead of the
+merchant itself (see "Charge distribution" above) — distinct from a
+*super merchant*, which absorbs the whole Merchant Wise Rate too, not
+just the Other Charge.
+
+The full journey, confirmed live (2026-11-25) end to end by creating two
+real vendors — `VND-00000003` "SoftBD Ltd" (kept for real) and
+`VND-00000004` "QA Vendor Explorer Co" (a throwaway, approved then
+detached again to confirm selectors with no lasting side effect):
+
+1. **Onboard**: "+ New vendor" creates a Draft and redirects straight to
+   its 4-step wizard (Personal Information → Business Information →
+   Primary Contact → Bank Details), all on one URL — an SPA step
+   switcher, not separate pages. Steps 1–3 save with "Save & continue";
+   saving step 4 reads **"Save & submit for approval"** and submits the
+   vendor for admin review in the same action.
+2. **Approve**: the Decision panel's Approve dialog lists *only
+   approved merchants with no super merchant* ("they own their Other
+   Charge") as an optional checkbox list — merchants can be attached
+   later instead. Approving without picking anyone still works.
+3. **Attach**: approving with a merchant ticked attaches it immediately,
+   but **does not by itself grant the payout** — the Merchants table's
+   "Other Charge Paid To" column still reads "The merchant" until a
+   separate step changes it.
+4. **Assign**: a row's "Pay Other Charge to this vendor" /
+   "Pay Other Charge to merchant" toggle is that separate step, and
+   needs a required Reason ("kept in the history").
+5. **Detach**: also needs a required reason; "Not attached to any
+   merchant." is the empty state once the only relationship is removed.
+
+**A real cross-vendor scheduling rule, confirmed live — important for
+anyone extending this suite**: a merchant can only ever pay its Other
+Charge to one vendor *as of any given day*. Scheduling a **second**
+vendor to receive it cannot take effect "now" if another vendor already
+holds that route today — the dialog's own copy names the next free day
+("*The earliest day is ... — the route before this one starts ...*").
+Attaching a second vendor is harmless by itself; only *confirming* the
+payout toggle schedules a real override. The full-journey test
+deliberately opens this dialog against Aalo (which already pays
+`VND-00000003` for real, from the live walkthrough above) only to
+assert that conflict-aware copy, and never confirms it — then detaches,
+so every run leaves Aalo's real payout to `VND-00000003` untouched.
+
+Also confirmed live: Mobile Number on Personal Information is hinted
+*"Unique to this vendor"* — the full-journey test generates a fresh one
+per run (`utils/dataGenerator.js`'s `uniqueMobileNumber()`), the same
+reason Business Name is generated too.
+
+```powershell
+npx playwright test tests/admin/vendorManagement.spec.js
+```
+
 ## See also
 
 See the feedback list delivered alongside this framework for a full list of
