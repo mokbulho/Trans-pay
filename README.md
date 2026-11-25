@@ -218,7 +218,12 @@ npm run test:admin
 
 See also: [BUSINESS_RULES.bn.md](BUSINESS_RULES.bn.md) — the full merchant
 registration → commission distribution business flow, in Bangla, with a
-worked ৳1,000 bill example.
+worked ৳1,000 bill example. And
+[TransPay_Charge_Distribution_Checklist.xlsx](TransPay_Charge_Distribution_Checklist.xlsx)
+— 56 charge-distribution test conditions (SM/PI commission changes,
+Other Charge, hierarchy, discounts, caps, rounding, EMI, combination
+scenarios), each marked Confirmed / Partially confirmed / Not tested
+against what this project has actually verified live.
 
 `tests/admin/chargeDistribution.spec.js` tests the business rules from a
 bank-provided spec, `TP_Charge_Distribution_Scenarios.xlsx` (Parameters /
