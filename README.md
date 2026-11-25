@@ -212,10 +212,24 @@ npm run test:admin
 `tests/admin/chargeDistribution.spec.js` tests the business rules from a
 bank-provided spec, `TP_Charge_Distribution_Scenarios.xlsx` (Parameters /
 Scenarios / Negative_Scenarios / Rules_Legend sheets), against what the
-live platform actually implements. The spreadsheet models a single charge
-split **proportionally by weight** across up to 5 parties — PI (Payment
-Instrument), TP (Transpay gateway, always paid), SM (Super Merchant), M
-(Merchant), V (Vendor) — e.g. "PI+TP active → PI gets 6%, TP gets 4%",
+live platform actually implements.
+
+**Entity glossary** (canonical definitions, with this project's test bindings):
+
+| Entity | Definition | This project's test binding |
+|---|---|---|
+| **PI** (Payment Instrument) | Which ways a merchant can be paid. Tick/untick, then "Save instruments" — the saved list is the whole set. | `TP_SANDBOX_PG · tp_sandbox_pg` |
+| **TP** (Payment Gateway) | Always receives a portion of the charges as commission. | TransPay |
+| **SM** (Super Merchant) | An umbrella entity for multiple merchants — shown as "Hierarchy: Super merchant" on the Approved list. | Aalo |
+| **M** (Merchant) | An entity that accepts payments (e.g. a school or college). A sub-merchant never pays less than its super merchant — shown as "Hierarchy: Sub-merchant" on the Approved list. | any Sub-merchant |
+| **V** (Vendor) | A third-party provider of software or services. Other Charge is paid to whichever vendor the merchant's relationship is bound to (see "Vendor management" above). | per-merchant |
+
+**Charge timing**:
+- **Inbound** charges are deducted at the time of payment receipt — the payer/merchant receives a smaller amount.
+- **Outbound** charges are deducted at the time of settlement or withdrawal.
+
+The spreadsheet models a single charge split **proportionally by weight**
+across these 5 parties — e.g. "PI+TP active → PI gets 6%, TP gets 4%",
 32 positive scenarios (16 party combinations × Inbound/Outbound) plus 10
 negative/invalid cases.
 
