@@ -209,6 +209,10 @@ npm run test:admin
 
 ## Charge distribution
 
+See also: [BUSINESS_RULES.bn.md](BUSINESS_RULES.bn.md) — the full merchant
+registration → commission distribution business flow, in Bangla, with a
+worked ৳1,000 bill example.
+
 `tests/admin/chargeDistribution.spec.js` tests the business rules from a
 bank-provided spec, `TP_Charge_Distribution_Scenarios.xlsx` (Parameters /
 Scenarios / Negative_Scenarios / Rules_Legend sheets), against what the
