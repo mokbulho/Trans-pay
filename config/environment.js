@@ -25,6 +25,14 @@ const environment = {
   // ("not proof anyone authenticated... stops a settle being triggered
   // by a bare link"); it only gates the simulator's 3 outcome buttons.
   sandboxSettlePin: process.env.SANDBOX_SETTLE_PIN || '730914',
+
+  // Core platform admin console (admin.dev.transpay.com.bd) — a separate
+  // site/login from the merchant-dev Admin Console above. Confirmed live
+  // (2026-11-25): its /login screen has no Cloudflare Turnstile, so unlike
+  // AdminLoginPage this one is expected to pass under Playwright for real.
+  coreAdminBaseUrl: process.env.CORE_ADMIN_BASE_URL || 'https://admin.dev.transpay.com.bd',
+  coreAdminUsername: process.env.CORE_ADMIN_USERNAME || 'admin',
+  coreAdminPassword: process.env.CORE_ADMIN_PASSWORD || 'admin123',
 };
 
 module.exports = { environment };

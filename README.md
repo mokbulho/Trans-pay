@@ -6,6 +6,10 @@ Scalable Playwright + Page Object Model framework for TransPay:
   Merchant" flow at `https://merchant-dev.softbd.xyz/onboarding`.
 - **Admin Console** (`tests/admin`) — the Merchant Management → Applications
   approval workflow at `https://merchant-dev.softbd.xyz/admin`.
+- **Core platform admin console** (`tests/core-admin`) — a separate site
+  (`https://admin.dev.transpay.com.bd`) covering Merchant Integration,
+  Charge & Rate Config and EMI Setting — see "Core platform admin
+  console" below.
 
 ## Structure
 
@@ -15,12 +19,14 @@ pages/
   base/             BasePage — shared navigation + search-dropdown helpers
   merchant/         MerchantBasePage + one page object per wizard step
   admin/            Admin login + Applications list/dialogs/pricing page objects
+  core-admin/       Core platform admin console page objects (separate site/login)
 fixtures/           Custom Playwright fixtures (auto-instantiate page objects)
 data/               Static/seed test data (+ placeholder upload assets)
 utils/              Framework-agnostic helpers (unique email/name generators)
 tests/
   merchant/
   admin/
+  core-admin/
 playwright.config.js Production-level config: retries, timeouts, trace/video/
                       screenshot capture, multi-browser projects
 ```
@@ -46,6 +52,7 @@ Configuration lives in `.env` (see `.env.example`). Key variables:
 npm test                 # everything, all browsers
 npm run test:merchant    # Merchant Onboarding suite
 npm run test:admin       # Admin Console suite
+npm run test:core-admin  # Core platform admin console suite
 npm run test:smoke       # tests tagged @smoke
 npm run test:headed      # see the browser
 npm run test:ui          # Playwright's interactive UI mode
@@ -432,6 +439,66 @@ reason Business Name is generated too.
 
 ```powershell
 npx playwright test tests/admin/vendorManagement.spec.js
+```
+
+## Core platform admin console
+
+`tests/core-admin` covers a **separate site entirely** from everything
+above — `https://admin.dev.transpay.com.bd`, the platform's own backing
+admin console (not merchant-dev's Admin Console). It's where the real
+Actual Rate / Rate To Charge / Other Charge figures used throughout
+"Charge distribution" and `BUSINESS_RULES.bn.md` actually live.
+
+**No Cloudflare Turnstile here** — confirmed live (2026-11-25): the
+`/login` screen is a plain Username/Password form, and this suite's
+login test passes for real under Playwright, unlike every test in
+`tests/admin` which skips on `blockedByCaptcha`.
+
+Two further UI quirks confirmed live and worth knowing before extending
+this suite:
+- The sidebar's 3 group headers ("Merchant Integration", "Charge & Rate
+  Config", "EMI Setting") are `<a>` tags with **no `href`**, so Chromium
+  computes their ARIA role as `generic`, not `link` — they're targeted
+  by visible text (`getByText(..., { exact: true })`), not by role.
+  Their expanded children (Merchant Type, Merchant List, ...) *are* real
+  `<a href>` links, targeted normally by role.
+- Every page and dialog title across this console (`Merchant Type`,
+  `Update Merchant`, `Merchant Bank Details`, `Discount Rates`, ...) is
+  likewise plain text, not a real heading element — except, confirmed
+  live, "EMI Supported Banks", which genuinely is one. Check each new
+  one rather than assuming either way.
+
+**Merchant Integration**: Merchant Type (8 categories) and Merchant List
+(34 merchants, read-only-by-default). A merchant row's "..." action
+opens Edit Details, Bank Details, Appearance Settings, Reset API
+Secret, and Assign Instrument. Confirmed live against merchant **Aalo**
+(mer-45610001) throughout. Reset API Secret's own confirmation dialog
+is explicit that it's irreversible ("the new secret is shown ONCE...
+any integration still using the old secret stops working immediately")
+— this suite only ever asserts that warning is shown and clicks **No**.
+
+**Charge & Rate Config**: Merchant Charge Mapping (18 of the 34
+merchants have a Transpay-charge/Other-Charge row configured) and
+Payment Instrument Charge (46 platform-wide Actual-Rate/Rate-to-Charge
+records) are both read/assert-only here — this is the config this
+project's `tests/payment/makePayment.spec.js` commission math was
+independently reverse-engineered from before this console was found,
+and the two now match exactly (TP_SANDBOX_PG: Actual Rate 1, Rate To
+Charge 1.5, "Bill + Transpay charge + other charge + margin"). Discount
+Rates and Discount Assignment are two independent tables — a Discount
+Rate's own "Active" flag doesn't mean it's actually in effect; only a
+Discount Assignment row (always scoped platform-wide, `ALLMERCHANT`)
+turns one on for a time window.
+
+**EMI Setting**: EMI Configuration (per-bank eligibility) and EMI
+Supported Bank (the platform-wide bank registry) are both populated
+normally, but EMI Activation shows EMI is essentially unused in
+practice — only the platform's own internal test account
+(`transpaycoretest`) has it activated, across all 5 banks; no real
+merchant does.
+
+```powershell
+npm run test:core-admin
 ```
 
 ## See also
